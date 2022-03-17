@@ -5,6 +5,9 @@ use helloworld::{HelloReply, HelloRequest};
 
 pub mod helloworld {
     tonic::include_proto!("helloworld");
+
+    pub(crate) const FILE_DESCRIPTOR_SET: &'static [u8] =
+        tonic::include_file_descriptor_set!("helloworld_descriptor");
 }
 
 #[derive(Debug, Default)]
@@ -33,7 +36,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     eprintln!("Server start: addr={addr}");
 
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_encoded_file_descriptor_set(helloworld::FILE_DESCRIPTOR_SET)
+        .build()
+        .unwrap();
+
     Server::builder()
+        .add_service(reflection_service)
         .add_service(GreeterServer::new(greeter))
         .serve(addr)
         .await?;
